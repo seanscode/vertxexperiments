@@ -2,6 +2,7 @@ package uk.co.howes.s.exp;
 
 import com.google.inject.Inject;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.FileUpload;
@@ -12,7 +13,7 @@ import java.util.Set;
 class ClamAVHandler {
 
     public static final int MAX_FILES = 1;
-    public static final long MAX_FILE_SIZE = 1024 * 1024 * 100;
+    public static final long MAX_FILE_SIZE = 1024 * 1024 * 150;
     private final AntiVirusService antiVirusService;
 
     @Inject
@@ -42,6 +43,14 @@ class ClamAVHandler {
         }
     }
 
+    public void handlePingVersion(RoutingContext routingContext) {
+        CompositeFuture.all(antiVirusService.ping(), antiVirusService.version()).setHandler(ar -> {
+            CompositeFuture result = ar.result();
+            Boolean pingResult = result.resultAt(0);
+            routingContext.response().setStatusCode(200).end(pingResult + " " + result.resultAt(1));
+        });
+    }
+
     private Handler<AsyncResult<String>> outputCommandResult(RoutingContext routingContext) {
         return ar -> {
             if (ar.succeeded()) {
@@ -52,11 +61,13 @@ class ClamAVHandler {
         };
     }
 
-    private Handler<AsyncResult<AntiVirusService.ScanResult>> handleScanResult(RoutingContext routingContext, FileUpload upload) {
+    private Handler<AsyncResult<AntiVirusServiceImpl.ScanResult>> handleScanResult(RoutingContext routingContext, FileUpload upload) {
         return ar -> {
             HttpServerResponse response = routingContext.response();
             if (ar.succeeded()) {
                 String scanResult = String.valueOf(ar.result());
+                String path = upload.uploadedFileName();
+                routingContext.vertx().fileSystem().deleteBlocking(path);
                 if (ar.result().isClean()) {
                     response.setStatusCode(200);
                 } else {

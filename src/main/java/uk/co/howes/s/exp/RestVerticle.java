@@ -25,6 +25,7 @@ class RestVerticle extends AbstractVerticle {
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
         router.route(HttpMethod.POST, "/scan/").handler(clamAVHandler::handleScan);
+        router.route(HttpMethod.POST, "/ping-version/").handler(clamAVHandler::handlePingVersion);
         router.route(HttpMethod.GET, "/ping").handler(clamAVHandler::handlePing);
         router.route(HttpMethod.GET, "/version").handler(clamAVHandler::handleVersion);
 

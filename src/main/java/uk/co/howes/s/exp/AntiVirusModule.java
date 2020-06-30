@@ -19,6 +19,7 @@ class AntiVirusModule extends AbstractModule {
     protected void configure() {
         bind(FileSystem.class).toInstance(vertx.fileSystem());
         bind(NetClient.class).toInstance(vertx.createNetClient());
+        bind(AntiVirusService.class).to(AntiVirusServiceImpl.class);
         bind(String.class).annotatedWith(Names.named("clam.host")).toInstance("192.168.56.101");
         bind(Integer.class).annotatedWith(Names.named("clam.port")).toInstance(3310);
     }
